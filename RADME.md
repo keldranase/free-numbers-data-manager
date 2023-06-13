@@ -1,0 +1,2 @@
+- excessive view-model-entity structure
+- instead of actually deleting numbers from the table implement a column "isDeleted" 
