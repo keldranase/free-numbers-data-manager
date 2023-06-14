@@ -89,7 +89,7 @@ public class FreeNumberService {
         toAdd.removeAll(fromDB);
 
         Set<FreeNumberModel> toDelete = new HashSet<>(fromDB);
-        toAdd.removeAll(fromClient);
+        toDelete.removeAll(fromClient);
 
         LOGGER.debug("Following numbers going to be saved to DB: " + toAdd);
         LOGGER.debug("Following numbers going to be deleted from DB: " + toDelete);
