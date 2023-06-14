@@ -13,6 +13,8 @@ import dev.alex.klepov.client.view.FreeCountryClientView;
 import dev.alex.klepov.client.view.FreeNumberClientView;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.util.UriComponentsBuilder;
 
 // sadly there's no openapi or similar spec to codegenerate a client, so we have to write our own manually
@@ -32,10 +34,17 @@ public class OnlinesimApiClient {
         this.defaultResponseTimeout = defaultResponseTimeout;
     }
 
+    @Retryable(
+            retryFor = OnlinesimClientException.class,
+            maxAttemptsExpression = "${onlinesim.data.manager.client.max.retry}",
+            backoff = @Backoff(
+                    delay = 1000,
+                    multiplier = 2))
     public List<FreeCountryClientView> getFreeCountryList() {
         try {
             return getFreeCountryListE();
         } catch (Exception e) {
+            LOGGER.error("Error occurred during requesting free numbers from api: " + e.getMessage());
             throw new OnlinesimClientException("Couldn't get list of free countries" + e.getMessage());
         }
     }
@@ -70,10 +79,17 @@ public class OnlinesimApiClient {
         return freeCountries;
     }
 
+    @Retryable(
+            retryFor = OnlinesimClientException.class,
+            maxAttemptsExpression = "${onlinesim.data.manager.client.max.retry}",
+            backoff = @Backoff(
+                    delay = 1000,
+                    multiplier = 2))
     public List<FreeNumberClientView> getFreePhoneList(long countryId) {
         try {
             return getFreePhoneListE(countryId);
         } catch (Exception e) {
+            LOGGER.error("Error occurred during requesting free numbers from api" + e.getMessage());
             throw new OnlinesimClientException("Couldn't get list of free phone numbers" + e.getMessage());
         }
     }

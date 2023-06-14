@@ -15,6 +15,8 @@ import dev.alex.klepov.model.converters.ViewModelEntityConverter;
 import dev.alex.klepov.persistence.FreeNumberDao;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 
 public class FreeSimsService {
@@ -29,19 +31,29 @@ public class FreeSimsService {
         this.freeNumberDao = freeNumberDao;
     }
 
-    @Transactional
     public Map<Long, List<FreeNumberModel>> getFreeNumbersAndUpdateDb(boolean doUpdateDb, Set<Long> countryCodes) {
-        Map<Long, List<FreeNumberModel>> numbersByCountry = freeNumbersByCountry(countryCodes);
+        try {
+            Map<Long, List<FreeNumberModel>> numbersByCountry = freeNumbersByCountry(countryCodes);
 
-        // db lookup backup
-        if (doUpdateDb) {
-            freeNumbersByCountryUpdateToDb(numbersByCountry);
+            if (doUpdateDb) {
+                freeNumbersByCountryUpdateToDb(numbersByCountry);
+            }
+
+            return numbersByCountry;
+        } catch (Exception e) {
+            LOGGER.error("Couldn't get response from api, falling back to getting info from db" + e.getMessage());
+
+            return new HashSet<>(freeNumberDao.findAll())
+                    .stream()
+                    .filter(num -> countryCodes.isEmpty() || countryCodes.contains(num.getCountryCode()))
+                    .collect(Collectors.groupingBy(
+                            FreeNumberModel::getCountryCode,
+                            TreeMap::new, // to order by countryCode
+                            Collectors.toList()));
         }
-
-        return numbersByCountry;
     }
 
-    public Map<Long, List<FreeNumberModel>> freeNumbersByCountry(Set<Long> countryCodes) {
+    private Map<Long, List<FreeNumberModel>> freeNumbersByCountry(Set<Long> countryCodes) {
         LOGGER.debug("Fetching numbers by country for countries: " + countryCodes);
 
         List<FreeCountryClientView> freeCountryList = onlinesimApiClient.getFreeCountryList()
@@ -60,7 +72,14 @@ public class FreeSimsService {
                         Collectors.toList()));
     }
 
-    public void freeNumbersByCountryUpdateToDb(Map<Long, List<FreeNumberModel>> numbersByCountry) {
+    @Transactional
+    @Retryable(
+            retryFor = Exception.class,
+            maxAttemptsExpression = "${onlinesim.data.manager.db.max.retry}",
+            backoff = @Backoff(
+                    delay = 500,
+                    multiplier = 2))
+    protected void freeNumbersByCountryUpdateToDb(Map<Long, List<FreeNumberModel>> numbersByCountry) {
         Set<FreeNumberModel> fromClient = numbersByCountry.values().stream()
                 .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
