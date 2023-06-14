@@ -72,13 +72,13 @@ public class FreeNumberService {
                 .toList();
 
         try {
-            return findFreeCountriesConcurrent(freeCountryList);
+            return findFreeCountriesMultithreaded(freeCountryList);
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException("Someone messed up with concurrency");
         }
     }
 
-    private Map<Long, List<FreeNumberModel>> findFreeCountriesConcurrent(List<FreeCountryClientView> freeCountryList)
+    private Map<Long, List<FreeNumberModel>> findFreeCountriesMultithreaded(List<FreeCountryClientView> freeCountryList)
             throws InterruptedException, ExecutionException {
 
         return forkJoinPool.submit(() -> freeCountryList.parallelStream()
