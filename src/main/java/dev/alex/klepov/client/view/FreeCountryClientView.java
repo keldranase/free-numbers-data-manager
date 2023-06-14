@@ -5,12 +5,12 @@ import com.google.gson.annotations.SerializedName;
 public class FreeCountryClientView {
 
     @SerializedName("country")
-    private int country;
+    private long country;
 
     @SerializedName("country_text")
     private String countryName;
 
-    public int getCountry() {
+    public long getCountry() {
         return country;
     }
 

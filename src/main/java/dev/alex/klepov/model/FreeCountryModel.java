@@ -2,15 +2,15 @@ package dev.alex.klepov.model;
 
 public class FreeCountryModel {
 
-    private final int countryCode;
+    private final long countryCode;
     private final String countryName;
 
-    public FreeCountryModel(int countryCode, String countryName) {
+    public FreeCountryModel(long countryCode, String countryName) {
         this.countryCode = countryCode;
         this.countryName = countryName;
     }
 
-    public int getCountryCode() {
+    public long getCountryCode() {
         return countryCode;
     }
 

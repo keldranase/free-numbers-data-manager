@@ -8,15 +8,17 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 
+import dev.alex.klepov.client.exception.OnlinesimClientException;
 import dev.alex.klepov.client.view.FreeCountryClientView;
 import dev.alex.klepov.client.view.FreeNumberClientView;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.web.util.UriComponentsBuilder;
 
-// sadly there's no openapi spec to codegenerate a client, so we have to write our own manually
+// sadly there's no openapi or similar spec to codegenerate a client, so we have to write our own manually
 public class OnlinesimApiClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OnlinesimApiClient.class);
+    private static final Logger LOGGER = LogManager.getLogger(OnlinesimApiClient.class);
 
     private static final int SUCCESS_STATUS_CODE = 1;
 
@@ -31,8 +33,18 @@ public class OnlinesimApiClient {
     }
 
     public List<FreeCountryClientView> getFreeCountryList() {
-        // todo: creating url like this might be fine for functional tests, but for actual production code I'd use some lib for composing it
-        URI uri = URI.create("https://onlinesim.ru/api/getFreeCountryList");
+        try {
+            return getFreeCountryListE();
+        } catch (Exception e) {
+            throw new OnlinesimClientException("Couldn't get list of free countries" + e.getMessage());
+        }
+    }
+
+    private List<FreeCountryClientView> getFreeCountryListE() {
+        URI uri = UriComponentsBuilder
+                .fromUriString(onlinesimBaseUrl + "/api/getFreeCountryList")
+                .build()
+                .toUri();
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(uri)
@@ -40,7 +52,7 @@ public class OnlinesimApiClient {
                 .timeout(Duration.ofMillis(defaultResponseTimeout))
                 .build();
 
-        return onlinesimHttpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        List<FreeCountryClientView> freeCountries = onlinesimHttpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> OnlinesimResponseMapper.mapFreeCountries(response.body()))
                 .thenApply(responsePojo -> {
                     if (responsePojo.getStatusCode() != SUCCESS_STATUS_CODE) {
@@ -50,10 +62,28 @@ public class OnlinesimApiClient {
                     return responsePojo.getCountries();
                 })
                 .join();
+
+        LOGGER.debug("Countries with free numbers were found: " + freeCountries.stream()
+                .map(FreeCountryClientView::getCountryName)
+                .toList());
+
+        return freeCountries;
     }
 
     public List<FreeNumberClientView> getFreePhoneList(long countryId) {
-        URI uri = URI.create("https://onlinesim.ru/api/getFreePhoneList?country=" + countryId);
+        try {
+            return getFreePhoneListE(countryId);
+        } catch (Exception e) {
+            throw new OnlinesimClientException("Couldn't get list of free phone numbers" + e.getMessage());
+        }
+    }
+
+    private List<FreeNumberClientView> getFreePhoneListE(long countryId) {
+        URI uri = UriComponentsBuilder
+                .fromUriString(onlinesimBaseUrl + "/api/getFreePhoneList")
+                .queryParam("country", countryId)
+                .build()
+                .toUri();
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(uri)
@@ -61,7 +91,7 @@ public class OnlinesimApiClient {
                 .timeout(Duration.ofMillis(defaultResponseTimeout))
                 .build();
 
-        return onlinesimHttpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        List<FreeNumberClientView> numbersByCountry = onlinesimHttpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> OnlinesimResponseMapper.mapFreeNumbers(response.body()))
                 .thenApply(responsePojo -> {
                     if (responsePojo.getStatusCode() != SUCCESS_STATUS_CODE) {
@@ -71,5 +101,11 @@ public class OnlinesimApiClient {
                     return responsePojo.getCountries();
                 })
                 .join();
+
+        LOGGER.debug("Free numbers were found: " + numbersByCountry.stream()
+                .map(FreeNumberClientView::getFullNumber)
+                .toList());
+
+        return numbersByCountry;
     }
 }

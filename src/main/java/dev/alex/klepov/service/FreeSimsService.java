@@ -12,37 +12,41 @@ import dev.alex.klepov.client.OnlinesimApiClient;
 import dev.alex.klepov.client.view.FreeCountryClientView;
 import dev.alex.klepov.model.FreeNumberModel;
 import dev.alex.klepov.model.converters.ViewModelEntityConverter;
-import dev.alex.klepov.persistence.FreeCountryRepository;
-import dev.alex.klepov.persistence.FreeNumberRepository;
+import dev.alex.klepov.persistence.FreeNumberDao;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.transaction.annotation.Transactional;
 
 public class FreeSimsService {
 
+    private static final Logger LOGGER = LogManager.getLogger(FreeSimsService.class);
+
     private final OnlinesimApiClient onlinesimApiClient;
+    private final FreeNumberDao freeNumberDao;
 
-    private final FreeCountryRepository freeCountryRepository;
-    private final FreeNumberRepository freeNumberRepository;
-
-    public FreeSimsService(OnlinesimApiClient onlinesimApiClient,
-                           FreeCountryRepository freeCountryRepository,
-                           FreeNumberRepository freeNumberRepository) {
+    public FreeSimsService(OnlinesimApiClient onlinesimApiClient, FreeNumberDao freeNumberDao) {
         this.onlinesimApiClient = onlinesimApiClient;
-        this.freeCountryRepository = freeCountryRepository;
-        this.freeNumberRepository = freeNumberRepository;
+        this.freeNumberDao = freeNumberDao;
     }
 
     @Transactional
-    public Map<Long, List<FreeNumberModel>> getFreeNumbersAndUpdateDb(Set<Long> countryIds) {
-        Map<Long, List<FreeNumberModel>> numbersByCountry = freeNumbersByCountry(countryIds);
-        freeNumbersByCountryUpdateToDb(numbersByCountry);
+    public Map<Long, List<FreeNumberModel>> getFreeNumbersAndUpdateDb(boolean doUpdateDb, Set<Long> countryCodes) {
+        Map<Long, List<FreeNumberModel>> numbersByCountry = freeNumbersByCountry(countryCodes);
+
+        // db lookup backup
+        if (doUpdateDb) {
+            freeNumbersByCountryUpdateToDb(numbersByCountry);
+        }
 
         return numbersByCountry;
     }
 
-    public Map<Long, List<FreeNumberModel>> freeNumbersByCountry(Set<Long> countryIds) {
+    public Map<Long, List<FreeNumberModel>> freeNumbersByCountry(Set<Long> countryCodes) {
+        LOGGER.debug("Fetching numbers by country for countries: " + countryCodes);
+
         List<FreeCountryClientView> freeCountryList = onlinesimApiClient.getFreeCountryList()
                 .stream()
-                .filter(country -> !countryIds.isEmpty() && countryIds.contains(country.getCountry()))
+                .filter(c -> countryCodes.isEmpty() || countryCodes.contains(c.getCountry()))
                 .toList();
 
         return freeCountryList.stream()
@@ -60,10 +64,7 @@ public class FreeSimsService {
         Set<FreeNumberModel> fromClient = numbersByCountry.values().stream()
                 .flatMap(Collection::stream)
                 .collect(Collectors.toSet());
-
-        Set<FreeNumberModel> fromDB = freeNumberRepository.findAll().stream()
-                .map(ViewModelEntityConverter::numberEntityToModel)
-                .collect(Collectors.toSet());
+        Set<FreeNumberModel> fromDB = new HashSet<>(freeNumberDao.findAll());
 
         Set<FreeNumberModel> toAdd = new HashSet<>(fromClient);
         toAdd.removeAll(fromDB);
@@ -71,12 +72,10 @@ public class FreeSimsService {
         Set<FreeNumberModel> toDelete = new HashSet<>(fromDB);
         toAdd.removeAll(fromClient);
 
-        freeNumberRepository.saveAll(toAdd.stream()
-                .map(ViewModelEntityConverter::numberModelToEntity)
-                .toList());
+        LOGGER.debug("Following numbers going to be saved to DB: " + toAdd);
+        LOGGER.debug("Following numbers going to be deleted from DB: " + toDelete);
 
-        freeNumberRepository.deleteAll(toDelete.stream()
-                .map(ViewModelEntityConverter::numberModelToEntity)
-                .toList());
+        freeNumberDao.saveBatch(toAdd);
+        freeNumberDao.deleteBatch(toDelete.stream().map(FreeNumberModel::getId).toList());
     }
 }

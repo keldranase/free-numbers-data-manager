@@ -5,6 +5,8 @@ import java.util.Objects;
 
 public class FreeNumberModel {
 
+    private Long id;
+
     private String number;
 
     private Long countryCode;
@@ -21,8 +23,9 @@ public class FreeNumberModel {
 
     private String status;
 
-    public FreeNumberModel(String number, Long countryCode, LocalDateTime updatedAt, String dataHumans,
+    public FreeNumberModel(Long id, String number, Long countryCode, LocalDateTime updatedAt, String dataHumans,
                            String fullNumber, String countryText, LocalDateTime maxdate, String status) {
+        this.id = id;
         this.number = number;
         this.countryCode = countryCode;
         this.updatedAt = updatedAt;
@@ -31,13 +34,15 @@ public class FreeNumberModel {
         this.countryText = countryText;
         this.maxdate = maxdate;
         this.status = status;
+    }
 
-//        String dateString = "2012-11-13 14:00:00:000";
-//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-M-d H:m:s:S");
-//        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-//        Date theDate = sdf.parse(dateString);
-//
-//        new SimpleDateFormat("yyyy-M-d H:m:s:S");
+    public Long getId() {
+        return id;
+    }
+
+    public FreeNumberModel setId(Long id) {
+        this.id = id;
+        return this;
     }
 
     public String getNumber() {
