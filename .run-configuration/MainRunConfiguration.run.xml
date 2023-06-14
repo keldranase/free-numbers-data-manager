@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="MainRunConfiguration" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="FreesimDataManager" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="dev.alex.klepov.ApplicationMain" />
+    <option name="VM_PARAMETERS" value="-Dfree.sim.data.manager.logs.folder=$USER_HOME$/log/onlinesim.data.manager" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="dev.alex.klepov.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
