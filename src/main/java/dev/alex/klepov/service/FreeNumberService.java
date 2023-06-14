@@ -17,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 public class FreeNumberService {
@@ -72,7 +73,9 @@ public class FreeNumberService {
                         Collectors.toList()));
     }
 
-    @Transactional
+    @Transactional(
+            // in case we'd want to have concurrent access to DB, weaker levels of isolation won't cut it
+            isolation = Isolation.REPEATABLE_READ)
     @Retryable(
             retryFor = Exception.class,
             maxAttemptsExpression = "${onlinesim.data.manager.db.max.retry}",
