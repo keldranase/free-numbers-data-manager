@@ -19,14 +19,14 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 
-public class FreeSimsService {
+public class FreeNumberService {
 
-    private static final Logger LOGGER = LogManager.getLogger(FreeSimsService.class);
+    private static final Logger LOGGER = LogManager.getLogger(FreeNumberService.class);
 
     private final OnlinesimApiClient onlinesimApiClient;
     private final FreeNumberDao freeNumberDao;
 
-    public FreeSimsService(OnlinesimApiClient onlinesimApiClient, FreeNumberDao freeNumberDao) {
+    public FreeNumberService(OnlinesimApiClient onlinesimApiClient, FreeNumberDao freeNumberDao) {
         this.onlinesimApiClient = onlinesimApiClient;
         this.freeNumberDao = freeNumberDao;
     }

@@ -6,7 +6,7 @@ import java.util.Set;
 
 import dev.alex.klepov.controller.view.FreeNumbersByCountryResponseView;
 import dev.alex.klepov.model.FreeNumberModel;
-import dev.alex.klepov.service.FreeSimsService;
+import dev.alex.klepov.service.FreeNumberService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +21,10 @@ public class FreeNumbersInfoController {
 
     private static final Logger LOGGER = LogManager.getLogger(FreeNumbersInfoController.class);
 
-    private final FreeSimsService freeSimsService;
+    private final FreeNumberService freeNumberService;
 
-    public FreeNumbersInfoController(FreeSimsService freeSimsService) {
-        this.freeSimsService = freeSimsService;
+    public FreeNumbersInfoController(FreeNumberService freeNumberService) {
+        this.freeNumberService = freeNumberService;
     }
 
     @PostMapping("/byCountry")
@@ -37,7 +37,7 @@ public class FreeNumbersInfoController {
 
         FreeNumbersParamsValidator.validateCountryCodes(countryCodes);
 
-        Map<Long, List<FreeNumberModel>> numbersByCountry = freeSimsService
+        Map<Long, List<FreeNumberModel>> numbersByCountry = freeNumberService
                 .getFreeNumbersAndUpdateDb(doUpdateDb, countryCodes);
 
         LOGGER.debug("Fequest for endpoint: /byCountry finished, returning response");

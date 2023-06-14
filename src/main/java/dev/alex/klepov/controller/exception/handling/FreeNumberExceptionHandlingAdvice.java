@@ -18,7 +18,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 // This also might be viewed as a downside, cause you it seems like can't configure same exception
 // but in practice there are multiple ways to handle this
 @ControllerAdvice
-public class TestAdvice extends ResponseEntityExceptionHandler {
+public class FreeNumberExceptionHandlingAdvice extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleDefault(Exception e) {
