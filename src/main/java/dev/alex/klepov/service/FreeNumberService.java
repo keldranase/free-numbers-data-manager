@@ -1,11 +1,14 @@
 package dev.alex.klepov.service;
 
+import java.lang.management.ManagementFactory;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 import dev.alex.klepov.client.OnlinesimApiClient;
@@ -24,12 +27,17 @@ public class FreeNumberService {
 
     private static final Logger LOGGER = LogManager.getLogger(FreeNumberService.class);
 
+
     private final OnlinesimApiClient onlinesimApiClient;
     private final FreeNumberDao freeNumberDao;
+    private final ForkJoinPool forkJoinPool;
 
     public FreeNumberService(OnlinesimApiClient onlinesimApiClient, FreeNumberDao freeNumberDao) {
         this.onlinesimApiClient = onlinesimApiClient;
         this.freeNumberDao = freeNumberDao;
+
+        int threadsToUse = Math.max(ManagementFactory.getThreadMXBean().getThreadCount() - 1, 1);
+        forkJoinPool = new ForkJoinPool(threadsToUse);
     }
 
     public Map<Long, List<FreeNumberModel>> getFreeNumbersAndUpdateDb(boolean doUpdateDb, Set<Long> countryCodes) {
@@ -41,6 +49,7 @@ public class FreeNumberService {
             }
 
             return numbersByCountry;
+
         } catch (Exception e) {
             LOGGER.error("Couldn't get response from api, falling back to getting info from db" + e.getMessage());
 
@@ -62,15 +71,27 @@ public class FreeNumberService {
                 .filter(c -> countryCodes.isEmpty() || countryCodes.contains(c.getCountry()))
                 .toList();
 
-        return freeCountryList.stream()
-                .map(FreeCountryClientView::getCountry)
-                .map(onlinesimApiClient::getFreePhoneList)
-                .flatMap(Collection::stream)
-                .map(ViewModelEntityConverter::numberToModel)
-                .collect(Collectors.groupingBy(
-                        FreeNumberModel::getCountryCode,
-                        TreeMap::new, // to order by countryCode
-                        Collectors.toList()));
+        try {
+            return findFreeCountriesConcurrent(freeCountryList);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Someone messed up with concurrency");
+        }
+    }
+
+    private Map<Long, List<FreeNumberModel>> findFreeCountriesConcurrent(List<FreeCountryClientView> freeCountryList)
+            throws InterruptedException, ExecutionException {
+
+        return forkJoinPool.submit(() -> freeCountryList.stream()
+                        .map(FreeCountryClientView::getCountry)
+                        .map(onlinesimApiClient::getFreePhoneList)
+                        .flatMap(Collection::stream)
+                        .map(ViewModelEntityConverter::numberToModel)
+                        .peek(a -> LOGGER.error("Hello " + Thread.currentThread()))
+                        .collect(Collectors.groupingBy(
+                                FreeNumberModel::getCountryCode,
+                                TreeMap::new, // to order by countryCode
+                                Collectors.toList())))
+                .get();
     }
 
     @Transactional(
