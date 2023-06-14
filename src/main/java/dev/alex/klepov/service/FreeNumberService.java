@@ -81,7 +81,7 @@ public class FreeNumberService {
     private Map<Long, List<FreeNumberModel>> findFreeCountriesConcurrent(List<FreeCountryClientView> freeCountryList)
             throws InterruptedException, ExecutionException {
 
-        return forkJoinPool.submit(() -> freeCountryList.stream()
+        return forkJoinPool.submit(() -> freeCountryList.parallelStream()
                         .map(FreeCountryClientView::getCountry)
                         .map(onlinesimApiClient::getFreePhoneList)
                         .flatMap(Collection::stream)
