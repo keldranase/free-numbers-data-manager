@@ -3,9 +3,12 @@ package dev.alex.klepov.controller;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
+import dev.alex.klepov.controller.view.FreeNumberResponseView;
 import dev.alex.klepov.controller.view.FreeNumbersByCountryResponseView;
-import dev.alex.klepov.model.FreeNumberModel;
+import dev.alex.klepov.model.converters.ViewModelConverter;
 import dev.alex.klepov.service.FreeNumberService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,10 +40,18 @@ public class FreeNumbersInfoController {
 
         FreeNumbersParamsValidator.validateCountryCodes(countryCodes);
 
-        Map<Long, List<FreeNumberModel>> numbersByCountry = freeNumberService
-                .getFreeNumbersAndUpdateDb(doUpdateDb, countryCodes);
+        new TreeMap<>();
+
+        Map<Long, List<FreeNumberResponseView>> response = freeNumberService
+                .getFreeNumbersAndUpdateDb(doUpdateDb, countryCodes).entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().stream().map(ViewModelConverter::modelNumberToResponseView).toList(),
+                        (a, b) -> a,
+                        TreeMap::new));
 
         LOGGER.debug("Fequest for endpoint: /byCountry finished, returning response");
-        return ResponseEntity.ok(new FreeNumbersByCountryResponseView(numbersByCountry));
+        return ResponseEntity.ok(new FreeNumbersByCountryResponseView(response));
     }
 }

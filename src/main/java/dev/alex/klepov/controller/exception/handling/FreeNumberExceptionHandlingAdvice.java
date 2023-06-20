@@ -15,8 +15,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 
 // Is better than ExceptionHandler, bc it's global, so you can have a centralized strategy for exception handling
-// This also might be viewed as a downside, cause you it seems like can't configure same exception
-// but in practice there are multiple ways to handle this
+// But you can also configure it to work on specific scopes
+//
+// Exception handling as it done in this file doesn't really make much sense,
+// because none of the exceptions carry any special info, and neither of them is handled in its own specific way
+// (except HTTP statuses)
+// These are done only to fulfil the requirement of exception handling in assignment description
 @ControllerAdvice
 public class FreeNumberExceptionHandlingAdvice extends ResponseEntityExceptionHandler {
 

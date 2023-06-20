@@ -36,6 +36,21 @@ public class FreeNumberModel {
         this.status = status;
     }
 
+    public FreeNumberModel(String number, Long countryCode, LocalDateTime updatedAt, String dataHumans,
+                           String fullNumber, String countryText, LocalDateTime maxdate, String status) {
+        this.id = null;
+        this.number = number;
+        this.countryCode = countryCode;
+        this.updatedAt = updatedAt;
+        this.dataHumans = dataHumans;
+        this.fullNumber = fullNumber;
+        this.countryText = countryText;
+        this.maxdate = maxdate;
+        this.status = status;
+    }
+
+
+
     public Long getId() {
         return id;
     }
@@ -77,6 +92,8 @@ public class FreeNumberModel {
         return status;
     }
 
+
+    // Comparing numbers only on full-number basis
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -86,11 +103,11 @@ public class FreeNumberModel {
             return false;
         }
         FreeNumberModel that = (FreeNumberModel) o;
-        return number.equals(that.number) && countryCode.equals(that.countryCode) && updatedAt.equals(that.updatedAt) && dataHumans.equals(that.dataHumans) && fullNumber.equals(that.fullNumber) && countryText.equals(that.countryText) && maxdate.equals(that.maxdate) && status.equals(that.status);
+        return fullNumber.equals(that.fullNumber);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(number, countryCode, updatedAt, dataHumans, fullNumber, countryText, maxdate, status);
+        return Objects.hash(fullNumber);
     }
 }

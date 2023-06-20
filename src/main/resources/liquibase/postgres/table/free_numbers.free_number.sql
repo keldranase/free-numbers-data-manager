@@ -13,4 +13,9 @@ create table free_numbers.free_number
     max_date             timestamp           not null,
     status              varchar(255)        not null,
     constraint free_number_pk_id primary key (id)
-)
+);
+
+
+--changeset alex_klepov:add_index
+create index idx_free_number_full_number
+on free_numbers.free_number(full_number)

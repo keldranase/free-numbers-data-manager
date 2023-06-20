@@ -10,13 +10,13 @@ public class FreeNumbersClientView {
     private int statusCode;
 
     @SerializedName("numbers")
-    private List<FreeNumberClientView> countries;
+    private List<FreeNumberClientView> numbers;
 
     public int getStatusCode() {
         return statusCode;
     }
 
-    public List<FreeNumberClientView> getCountries() {
-        return countries;
+    public List<FreeNumberClientView> getNumbers() {
+        return numbers;
     }
 }

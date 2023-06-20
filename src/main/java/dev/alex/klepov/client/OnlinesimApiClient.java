@@ -34,6 +34,10 @@ public class OnlinesimApiClient {
         this.defaultResponseTimeout = defaultResponseTimeout;
     }
 
+    // This thing is like really important, cause sometimes api gives broken responses for a couple of secs
+    // And retries do remedy this problem
+    // We'll retry failed requests, with the pause of 1000ms, doubling it with each new retry
+    // till we get a parseable response, or exhaust retry count
     @Retryable(
             retryFor = OnlinesimClientException.class,
             maxAttemptsExpression = "${onlinesim.data.manager.client.max.retry}",
@@ -114,7 +118,7 @@ public class OnlinesimApiClient {
                         throw new RuntimeException("bad response");
                     }
 
-                    return responsePojo.getCountries();
+                    return responsePojo.getNumbers();
                 })
                 .join();
 

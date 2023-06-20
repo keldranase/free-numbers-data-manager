@@ -4,14 +4,16 @@ import com.google.gson.annotations.SerializedName;
 
 public class FreeNumberClientView {
 
+    // technically could be represented by a numeric type, but I don't see a point in it
     @SerializedName("number")
     private String number;
 
     @SerializedName("country")
-    private int countryCode;
+    private Long countryCode;
 
+    // IMHO, it's better to accept data in a form of a string, and later to convert to date or anything else
     @SerializedName("updated_at")
-    private String updatedAt; // date
+    private String updatedAt;
 
     @SerializedName("data_humans")
     private String dataHumans;
@@ -22,7 +24,7 @@ public class FreeNumberClientView {
     @SerializedName("country_text")
     private String countryText;
 
-    @SerializedName("maxdate") // date
+    @SerializedName("maxdate")
     private String maxdate;
 
     @SerializedName("status")
@@ -32,7 +34,7 @@ public class FreeNumberClientView {
         return number;
     }
 
-    public int getCountryCode() {
+    public Long getCountryCode() {
         return countryCode;
     }
 

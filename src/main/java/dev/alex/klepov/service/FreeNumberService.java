@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
@@ -14,7 +13,7 @@ import java.util.stream.Collectors;
 import dev.alex.klepov.client.OnlinesimApiClient;
 import dev.alex.klepov.client.view.FreeCountryClientView;
 import dev.alex.klepov.model.FreeNumberModel;
-import dev.alex.klepov.model.converters.ViewModelEntityConverter;
+import dev.alex.klepov.model.converters.ViewModelConverter;
 import dev.alex.klepov.persistence.FreeNumberDao;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class FreeNumberService {
 
     private static final Logger LOGGER = LogManager.getLogger(FreeNumberService.class);
-
 
     private final OnlinesimApiClient onlinesimApiClient;
     private final FreeNumberDao freeNumberDao;
@@ -56,10 +54,7 @@ public class FreeNumberService {
             return new HashSet<>(freeNumberDao.findAll())
                     .stream()
                     .filter(num -> countryCodes.isEmpty() || countryCodes.contains(num.getCountryCode()))
-                    .collect(Collectors.groupingBy(
-                            FreeNumberModel::getCountryCode,
-                            TreeMap::new, // to order by countryCode
-                            Collectors.toList()));
+                    .collect(Collectors.groupingBy(FreeNumberModel::getCountryCode));
         }
     }
 
@@ -85,18 +80,13 @@ public class FreeNumberService {
                         .map(FreeCountryClientView::getCountry)
                         .map(onlinesimApiClient::getFreePhoneList)
                         .flatMap(Collection::stream)
-                        .map(ViewModelEntityConverter::numberToModel)
-                        .peek(a -> LOGGER.error("Hello " + Thread.currentThread()))
-                        .collect(Collectors.groupingBy(
-                                FreeNumberModel::getCountryCode,
-                                TreeMap::new, // to order by countryCode
-                                Collectors.toList())))
+                        .map(ViewModelConverter::clientViewNumberToModel)
+                        .collect(Collectors.groupingBy(FreeNumberModel::getCountryCode)))
                 .get();
     }
 
-    @Transactional(
-            // in case we'd want to have concurrent access to DB, weaker levels of isolation won't cut it
-            isolation = Isolation.REPEATABLE_READ)
+    // todo: haven't really thought about edge-cases
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     @Retryable(
             retryFor = Exception.class,
             maxAttemptsExpression = "${onlinesim.data.manager.db.max.retry}",
